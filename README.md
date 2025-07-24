@@ -1,4 +1,4 @@
-# Photo Sharing App
+# Photo Sharing App - added PostgreSQL for manaing user auth/login
 
 ## Overview
 
@@ -13,37 +13,88 @@ A containerized microservice-based Photo Sharing App built with FastAPI and Post
 
 ## Setup (Ubuntu 24.04)
 
-### 1. Install system packages
-
 ```bash
 sudo apt update
 sudo apt install -y python3 python3-venv docker docker-compose
 ```
 
-### 2. Create and activate virtual environment
 
-```bash
-cd photo_share_app
+## 1. build and run the App
+```
 python3 -m venv .venv
 source .venv/bin/activate
+
+docker compose down
+docker ps -a
+docker compose up --build
 ```
 
-### 3. Start services
+## 2. Run the `DB initialization script` manually to initialize DB
 
-```bash
-docker-compose up --build
+```
+docker-compose exec backend python init_db.py
+
+    Expected output:
+
+    CREATE TABLE users (
+	    id              SERIAL NOT NULL, 
+	    email           VARCHAR NOT NULL, 
+	    hashed_password VARCHAR NOT NULL, 
+	    is_active       BOOLEAN, 
+	    is_verified     BOOLEAN, 
+	    created_at      TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	    PRIMARY KEY     (id)
+    )
+
+    CREATE TABLE email_verifications (
+	    id          SERIAL NOT NULL, 
+	    email       VARCHAR NOT NULL, 
+	    secret      VARCHAR NOT NULL, 
+	    expires_at  TIMESTAMP WITH TIME ZONE NOT NULL, 
+	    created_at  TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	    PRIMARY KEY (id), 
+	    UNIQUE      (secret)
+    )
+
 ```
 
-### 4. Run tests
+## 3. Register user
+```
+curl -X POST http://localhost:8000/api/users/register      -H "Content-Type: application/json"      -d '{"email": "user1@example.com", "password": "testpass123"}'
 
-```bash
-docker-compose exec backend pytest
+        Expected output:
+        {"id":1,"email":"user1@example.com","is_active":true,"is_verified":false}
 ```
 
-## Sample test users
+## 4. Request verification
+```
+curl -X POST http://localhost:8000/api/users/request-verification      -H "Content-Type: application/json"      -d '{"email": "user1@example.com"}'
 
-- Email: `user1@example.com` / Password: `testpass123`
-- Email: `user2@example.com` / Password: `testpass456`
+        Expected output:
+        {"message":"Verification email sent (simulated)"}
+```
 
-Sample images are in `sample_data/images/`.
+## 5. Verify in the browser
+```
+curl http://localhost:8000/api/users/verify-email?secret=BOAPBq_hhqa0cWRuFZ9xjmHw6WIne0wu0VZjRS1UILQ
+
+        Expected output:
+        {"message":"Email user1@example.com successfully verified."}
+
+```
+
+## 6. Testing `JWT login` and `Secure /me endpoint`
+
+```
+
+TOKEN=$(curl -s -X POST http://localhost:8000/api/users/login \
+  -F "username=user1@example.com" \
+  -F "password=testpass123" | jq -r .access_token)
+
+curl -H "Authorization: Bearer $TOKEN"     http://localhost:8000/api/users/me
+
+    Expected output:
+    {"id":1,"email":"user1@example.com","is_active":true,"is_verified":true}
+
+``` 
 
