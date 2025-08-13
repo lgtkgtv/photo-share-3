@@ -1,13 +1,44 @@
+# Core FastAPI framework
 fastapi
 uvicorn[standard]
+python-multipart
+
+# Database
 sqlalchemy
 asyncpg
 psycopg2-binary
+
+# Security & Authentication
 python-jose[cryptography]
 passlib[bcrypt]
-pydantic
+pydantic[email]
 email-validator
+cryptography>=3.4.8
+
+# Rate Limiting & Caching (for production Redis support)
+redis>=4.0.0
+aioredis>=2.0.0
+
+# Security enhancements
+python-decouple>=3.6  # For secure environment variable management
+bcrypt>=3.2.0  # Ensure latest bcrypt
+PyJWT>=2.4.0  # Additional JWT support
+
+# Testing & Development
 pytest
+pytest-asyncio
+pytest-mock
 httpx
-python-multipart
+requests
+
+# Security testing
+bandit  # Security linter
+
+# Monitoring & Logging
+structlog  # Structured logging for security events
+python-json-logger  # JSON logging format
+
+# Performance & Scale
+gunicorn  # Production WSGI server
+gevent  # Async support for gunicorn
 
