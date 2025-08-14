@@ -3,6 +3,7 @@ Basic database connection and initialization tests.
 """
 import pytest
 import asyncio
+from sqlalchemy import text
 from services.db import engine, get_db, DATABASE_URL
 from models.user import User
 from models.email_verification import EmailVerification
@@ -24,7 +25,7 @@ class TestDatabaseConnection:
         try:
             async with engine.begin() as conn:
                 # Simple query to test connection
-                result = await conn.execute("SELECT 1 as test_value")
+                result = await conn.execute(text("SELECT 1 as test_value"))
                 row = result.fetchone()
                 assert row[0] == 1
                 print("✅ Database connection successful")

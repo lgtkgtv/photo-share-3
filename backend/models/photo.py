@@ -200,6 +200,7 @@ class PhotoShare(Base):
     
     # Who has access
     shared_with_user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)  # Specific user
+    shared_with_email = Column(String(255), nullable=True, index=True)  # Email-based sharing for unregistered users
     shared_with_role = Column(String(50), nullable=True)  # Role-based sharing
     shared_with_group = Column(String(100), nullable=True)  # Group-based sharing
     

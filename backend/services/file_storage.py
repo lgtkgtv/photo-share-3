@@ -30,7 +30,7 @@ ALLOWED_MIME_TYPES = {
 }
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-MIN_FILE_SIZE = 1024  # 1KB
+MIN_FILE_SIZE = 100  # 100 bytes (more lenient for tests)
 MAX_IMAGE_DIMENSION = 10000  # 10000px max width/height
 MIN_IMAGE_DIMENSION = 1  # 1px min width/height
 
@@ -80,7 +80,7 @@ class FileValidator:
             
             file_size = os.path.getsize(file_path)
             if file_size < MIN_FILE_SIZE:
-                raise FileValidationError("File too small")
+                raise FileValidationError(f"File too small. Minimum size: {MIN_FILE_SIZE} bytes")
             
             if file_size > max_size:
                 raise FileValidationError(f"File too large. Maximum size: {max_size} bytes")

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from services.db import get_db
 from services.authorization import require_auth_and_permission, require_self_or_admin
+from services.auth import get_current_user
 from services.rbac import RBACService
 from services.file_storage import storage, FileValidationError, StorageError
 from services.security import SecurityUtils
@@ -48,7 +49,7 @@ async def upload_photo(
     file: UploadFile = File(...),
     metadata: str = Form("{}"),  # JSON string with photo metadata
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(ResourceType.PHOTO, ActionType.CREATE)
+    current_user: User = Depends(require_auth_and_permission(ResourceType.PHOTO, ActionType.CREATE))
 ):
     """
     Upload a single photo with comprehensive security validation.
@@ -245,7 +246,7 @@ async def upload_photos_batch(
     files: List[UploadFile] = File(...),
     metadata: str = Form("[]"),  # JSON array with metadata for each file
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(ResourceType.PHOTO, ActionType.CREATE)
+    current_user: User = Depends(require_auth_and_permission(ResourceType.PHOTO, ActionType.CREATE))
 ):
     """
     Upload multiple photos in a batch with security validation.
@@ -363,10 +364,10 @@ async def get_photo(
     photo_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(
+    current_user: User = Depends(require_auth_and_permission(
         ResourceType.PHOTO, ActionType.READ, 
         allow_owner=True, resource_id_param="photo_id"
-    )
+    ))
 ):
     """
     Get detailed photo information with permission checking.
@@ -421,10 +422,10 @@ async def update_photo_metadata(
     update_data: PhotoMetadataUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(
+    current_user: User = Depends(require_auth_and_permission(
         ResourceType.PHOTO, ActionType.UPDATE,
         allow_owner=True, resource_id_param="photo_id"
-    )
+    ))
 ):
     """
     Update photo metadata with security validation.
@@ -504,10 +505,10 @@ async def delete_photo(
     photo_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(
+    current_user: User = Depends(require_auth_and_permission(
         ResourceType.PHOTO, ActionType.DELETE,
         allow_owner=True, resource_id_param="photo_id"
-    )
+    ))
 ):
     """
     Soft delete photo with security validation.
@@ -573,10 +574,10 @@ async def create_photo_share(
     share_data: PhotoShareCreate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(
+    current_user: User = Depends(require_auth_and_permission(
         ResourceType.PHOTO, ActionType.UPDATE,
         allow_owner=True, resource_id_param="photo_id"
-    )
+    ))
 ):
     """
     Create a new photo share with granular permissions.
@@ -722,10 +723,10 @@ async def list_photo_shares(
     photo_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(
+    current_user: User = Depends(require_auth_and_permission(
         ResourceType.PHOTO, ActionType.READ,
         allow_owner=True, resource_id_param="photo_id"
-    )
+    ))
 ):
     """
     List all shares for a photo.
@@ -788,10 +789,10 @@ async def revoke_photo_share(
     share_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = require_auth_and_permission(
+    current_user: User = Depends(require_auth_and_permission(
         ResourceType.PHOTO, ActionType.UPDATE,
         allow_owner=True, resource_id_param="photo_id"
-    )
+    ))
 ):
     """
     Revoke a photo share.
@@ -852,7 +853,7 @@ async def access_shared_photo(
     token: str,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(require_auth_and_permission(ResourceType.PHOTO, ActionType.READ, optional=True))
+    current_user: Optional[User] = Depends(get_current_user)
 ):
     """
     Access a photo via share token.

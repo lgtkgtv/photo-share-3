@@ -115,7 +115,7 @@ class TestFileValidation:
             with pytest.raises(FileValidationError) as exc_info:
                 validator.validate_file(temp_file_path, "malicious.jpg")
             
-            assert "malicious" in str(exc_info.value).lower()
+            assert "potentially malicious" in str(exc_info.value).lower() or "malicious" in str(exc_info.value).lower()
         finally:
             os.unlink(temp_file_path)
     

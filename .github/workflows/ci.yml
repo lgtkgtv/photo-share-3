@@ -79,11 +79,6 @@ jobs:
         JWT_ALGORITHM=HS256
         JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
         
-        # Legacy Auth Config (for backward compatibility)
-        SECRET_KEY=test-secret-key-for-legacy-auth-compatibility
-        ALGORITHM=HS256
-        ACCESS_TOKEN_EXPIRE_MINUTES=30
-        
         # Environment Identification
         ENVIRONMENT=test
         DEBUG=false
@@ -119,7 +114,7 @@ jobs:
       run: |
         # Wait for PostgreSQL to be ready
         for i in {1..30}; do
-          if pg_isready -h localhost -p 5432 -U test_user; then
+          if PGPASSWORD=test_password pg_isready -h localhost -p 5432 -U test_user; then
             echo "PostgreSQL is ready!"
             break
           fi
