@@ -248,7 +248,7 @@ class RoleManagement(BaseModel):
 # Bulk operations schemas
 class BulkRoleAssignment(BaseModel):
     """Schema for bulk role assignments."""
-    user_ids: List[int] = Field(..., min_items=1, max_items=100)
+    user_ids: List[int] = Field(..., min_length=1, max_length=100)
     role_id: int = Field(..., gt=0)
 
 class BulkRoleAssignmentResult(BaseModel):

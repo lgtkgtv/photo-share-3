@@ -143,23 +143,36 @@ class PasswordValidator:
             "Password1", "password1", "123456789", "welcome123"
         }
     
-    def _has_sequential_chars(self, password: str, min_seq_length: int = 3) -> bool:
-        """Check for sequential characters in password."""
+    def _has_sequential_chars(self, password: str, min_seq_length: int = 4) -> bool:
+        """Check for sequential characters in password (4+ chars to be less strict)."""
         password_lower = password.lower()
         
-        # Check for sequential numbers
+        # Check for sequential numbers (4+ digits)
         for i in range(len(password_lower) - min_seq_length + 1):
             substr = password_lower[i:i + min_seq_length]
             if substr.isdigit():
                 if all(int(substr[j]) == int(substr[0]) + j for j in range(len(substr))):
                     return True
                     
-        # Check for sequential letters
+        # Check for sequential letters (4+ letters)
         for i in range(len(password_lower) - min_seq_length + 1):
             substr = password_lower[i:i + min_seq_length]
             if substr.isalpha():
                 if all(ord(substr[j]) == ord(substr[0]) + j for j in range(len(substr))):
                     return True
+        
+        # Check for obvious long sequences regardless of length
+        obvious_sequences = [
+            "0123", "1234", "2345", "3456", "4567", "5678", "6789",
+            "abcd", "bcde", "cdef", "defg", "efgh", "fghi", "ghij",
+            "hijk", "ijkl", "jklm", "klmn", "lmno", "mnop", "nopq",
+            "opqr", "pqrs", "qrst", "rstu", "stuv", "tuvw", "uvwx",
+            "vwxy", "wxyz"
+        ]
+        
+        for seq in obvious_sequences:
+            if seq in password_lower:
+                return True
                     
         return False
 

@@ -28,6 +28,8 @@ PyJWT>=2.4.0  # Additional JWT support
 pytest
 pytest-asyncio
 pytest-mock
+pytest-cov
+aiosqlite  # For test database
 httpx
 requests
 

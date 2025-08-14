@@ -26,7 +26,9 @@ async def verify_password_secure(plain: str, hashed: str, fake_user_email: str =
     if fake_user_email:
         # For non-existent users, hash a fake password to maintain constant time
         fake_password = f"fake_password_for_{fake_user_email}"
-        pwd_context.verify(fake_password, "$2b$12$dummy.hash.that.will.always.fail.validation")
+        # Use a proper bcrypt hash that will always fail verification
+        dummy_hash = "$2b$12$3g3vIXnf/kPcpMr6xf2rGeAk0n6TyK92/tC83VdpA/DpeOwFcphN."
+        pwd_context.verify(fake_password, dummy_hash)
         return False
     else:
         # Real password verification

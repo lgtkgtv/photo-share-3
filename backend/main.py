@@ -83,11 +83,51 @@ def health_check():
     """Health check endpoint for load balancers and monitoring."""
     return {
         "status": "healthy",
+        "timestamp": "2024-01-01T00:00:00Z",
+        "version": "1.0.0",
         "security_config": {
             "rate_limiting": "enabled",
             "security_headers": security_config.enable_security_headers,
             "csrf_protection": security_config.enable_csrf_protection
         }
+    }
+
+@app.get("/health/ready")
+async def readiness_check():
+    """Readiness probe for Kubernetes and production deployments."""
+    try:
+        from services.db import get_db
+        
+        # Test database connection
+        async for db in get_db():
+            await db.execute("SELECT 1")
+            break
+        
+        return {
+            "status": "ready",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "checks": {
+                "database": "healthy",
+                "security": "enabled"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "timestamp": "2024-01-01T00:00:00Z",
+                "error": "Database connection failed"
+            }
+        )
+
+@app.get("/health/live")
+def liveness_check():
+    """Liveness probe for container orchestration."""
+    return {
+        "status": "alive",
+        "timestamp": "2024-01-01T00:00:00Z"
     }
 
 # Error handlers for security-related errors

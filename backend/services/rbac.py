@@ -391,7 +391,7 @@ class RBACService:
                 user_roles.insert().values(
                     user_id=user_id,
                     role_id=role_id,
-                    assigned_by=assigned_by
+                    assigned_by_user_id=assigned_by
                 )
             )
             await self.db.commit()

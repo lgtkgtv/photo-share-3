@@ -23,7 +23,7 @@ user_roles = Table(
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True),
     Column('assigned_at', DateTime(timezone=True), server_default=func.now()),
-    Column('assigned_by', Integer, ForeignKey('users.id'), nullable=True)  # Who assigned this role
+    Column('assigned_by_user_id', Integer, ForeignKey('users.id'), nullable=True)  # Who assigned this role - renamed to avoid ambiguity
 )
 
 class Role(Base):
@@ -50,7 +50,13 @@ class Role(Base):
     
     # Relationships
     permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
-    users = relationship("User", secondary=user_roles, back_populates="roles")
+    users = relationship(
+        "User", 
+        secondary=user_roles, 
+        back_populates="roles",
+        primaryjoin="Role.id == user_roles.c.role_id",
+        secondaryjoin="User.id == user_roles.c.user_id"
+    )
     parent_role = relationship("Role", remote_side=[id])
     child_roles = relationship("Role", remote_side=[parent_role_id])
     

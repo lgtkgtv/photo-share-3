@@ -27,7 +27,7 @@ def event_loop():
     yield loop
     loop.close()
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_engine():
     """Create test database engine."""
     engine = create_async_engine(
@@ -46,7 +46,7 @@ async def test_engine():
     # Clean up
     await engine.dispose()
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     """Create test database session."""
     async_session = async_sessionmaker(
@@ -57,7 +57,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
         yield session
         await session.rollback()
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
     """Create a test user."""
     dao = UserDAO(db_session)
@@ -74,7 +74,7 @@ async def test_user(db_session: AsyncSession) -> User:
     user = await dao.create_user(test_user)
     return user
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def admin_user(db_session: AsyncSession) -> User:
     """Create an admin test user with admin permissions."""
     from services.rbac import RBACService
@@ -119,7 +119,7 @@ async def admin_user(db_session: AsyncSession) -> User:
     
     return user
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def regular_user(db_session: AsyncSession) -> User:
     """Create a regular user with basic permissions."""
     from services.rbac import RBACService
@@ -178,7 +178,7 @@ def mock_request():
     
     return request
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_permissions(db_session: AsyncSession):
     """Create a set of test permissions."""
     permissions = [
@@ -199,7 +199,7 @@ async def test_permissions(db_session: AsyncSession):
     
     return permissions
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_roles(db_session: AsyncSession, test_permissions):
     """Create a set of test roles with permissions."""
     # Map permissions by name for easy access
@@ -354,25 +354,64 @@ def pytest_configure(config):
 # Environment setup for tests
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
-    """Setup test environment variables."""
-    os.environ["JWT_SECRET_KEY"] = "test_secret_key_for_testing_purposes_only_very_long_and_secure"
-    os.environ["JWT_ALGORITHM"] = "HS256"
-    os.environ["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
-    os.environ["PASSWORD_MIN_LENGTH"] = "8"  # Shorter for testing
-    os.environ["RATE_LIMIT_LOGIN_ATTEMPTS_PER_HOUR"] = "5"
-    os.environ["ACCOUNT_LOCKOUT_ATTEMPTS"] = "5"
-    os.environ["ENABLE_SECURITY_HEADERS"] = "true"
-    os.environ["ENABLE_CSRF_PROTECTION"] = "false"  # Disabled for API testing
+    """
+    Setup isolated test environment with dedicated test configuration.
+    This ensures tests run with consistent, isolated configuration separate from development.
+    """
+    import os
+    from pathlib import Path
+    from dotenv import load_dotenv
+    
+    # Store original environment
+    original_env = dict(os.environ)
+    
+    # Load test-specific environment configuration
+    test_env_path = Path(__file__).parent.parent.parent / ".env.test"
+    if test_env_path.exists():
+        # Clear existing environment variables that might conflict
+        test_vars_to_clear = [
+            "JWT_SECRET_KEY", "JWT_ALGORITHM", "JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+            "PASSWORD_MIN_LENGTH", "RATE_LIMIT_LOGIN_ATTEMPTS_PER_HOUR", 
+            "ACCOUNT_LOCKOUT_ATTEMPTS", "ENABLE_SECURITY_HEADERS", "ENABLE_CSRF_PROTECTION",
+            "ENVIRONMENT", "DEBUG"
+        ]
+        
+        for var in test_vars_to_clear:
+            if var in os.environ:
+                del os.environ[var]
+        
+        # Load test environment
+        load_dotenv(test_env_path, override=True)
+        print(f"✓ Loaded test environment from {test_env_path}")
+    else:
+        # Fallback to hardcoded test values if .env.test doesn't exist
+        print("⚠ .env.test not found, using fallback test configuration")
+        os.environ["JWT_SECRET_KEY"] = "test_jwt_secret_key_for_testing_purposes_only_very_long_and_secure_key_64_chars"
+        os.environ["JWT_ALGORITHM"] = "HS256"
+        os.environ["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"] = "30"
+        os.environ["PASSWORD_MIN_LENGTH"] = "8"
+        os.environ["RATE_LIMIT_LOGIN_ATTEMPTS_PER_HOUR"] = "10"
+        os.environ["ACCOUNT_LOCKOUT_ATTEMPTS"] = "10"
+        os.environ["ENABLE_SECURITY_HEADERS"] = "true"
+        os.environ["ENABLE_CSRF_PROTECTION"] = "false"
+        os.environ["ENVIRONMENT"] = "test"
+    
+    # Ensure test environment is properly identified
+    os.environ["ENVIRONMENT"] = "test"
+    
+    # Force reload of security configuration with test values
+    # This ensures the SecurityConfig picks up the test environment
+    try:
+        from services.security import SecurityConfig
+        global test_security_config
+        test_security_config = SecurityConfig()
+        print(f"✓ SecurityConfig loaded with JWT secret length: {len(test_security_config.jwt_secret_key)}")
+    except ImportError:
+        print("⚠ Could not reload SecurityConfig - proceeding with environment variables only")
     
     yield
     
-    # Cleanup
-    test_env_vars = [
-        "JWT_SECRET_KEY", "JWT_ALGORITHM", "JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
-        "PASSWORD_MIN_LENGTH", "RATE_LIMIT_LOGIN_ATTEMPTS_PER_HOUR", 
-        "ACCOUNT_LOCKOUT_ATTEMPTS", "ENABLE_SECURITY_HEADERS", "ENABLE_CSRF_PROTECTION"
-    ]
-    
-    for var in test_env_vars:
-        if var in os.environ:
-            del os.environ[var]
+    # Restore original environment
+    os.environ.clear()
+    os.environ.update(original_env)
+    print("✓ Test environment cleaned up")

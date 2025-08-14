@@ -22,14 +22,20 @@ class User(Base):
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
     
-    # RBAC relationships (imported from models.role to avoid circular imports)
-    # roles = relationship("Role", secondary="user_roles", back_populates="users")
-    # sessions = relationship("UserSession", back_populates="user")
+    # RBAC relationships - using string references to avoid circular imports
+    roles = relationship(
+        "Role", 
+        secondary="user_roles", 
+        back_populates="users",
+        primaryjoin="User.id == user_roles.c.user_id",
+        secondaryjoin="Role.id == user_roles.c.role_id"
+    )
+    sessions = relationship("UserSession", back_populates="user")
     
-    # Photo relationships
-    photos = relationship("Photo", back_populates="owner")
-    albums = relationship("Album", back_populates="owner") 
-    storage_quota = relationship("StorageQuota", back_populates="user", uselist=False)
+    # Photo relationships - using string references for future implementation
+    # photos = relationship("Photo", back_populates="owner")
+    # albums = relationship("Album", back_populates="owner") 
+    # storage_quota = relationship("StorageQuota", back_populates="user", uselist=False)
     
     def __repr__(self):
         return f"<User(email='{self.email}', active={self.is_active}, verified={self.is_verified})>"

@@ -45,7 +45,7 @@ class PhotoMetadataBase(BaseModel):
     """Base schema for photo metadata."""
     title: Optional[str] = Field(None, max_length=MAX_TITLE_LENGTH)
     description: Optional[str] = Field(None, max_length=MAX_DESCRIPTION_LENGTH)
-    tags: Optional[List[str]] = Field(None, max_items=MAX_TAGS_COUNT)
+    tags: Optional[List[str]] = Field(None, max_length=MAX_TAGS_COUNT)
     
     @field_validator('title')
     def validate_title(cls, v):
@@ -220,7 +220,7 @@ class AlbumCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
     album_type: AlbumTypeEnum = AlbumTypeEnum.PERSONAL
     is_public: bool = False
-    tags: Optional[List[str]] = Field(None, max_items=MAX_TAGS_COUNT)
+    tags: Optional[List[str]] = Field(None, max_length=MAX_TAGS_COUNT)
     
     @field_validator('name')
     def validate_album_name(cls, v):
@@ -238,7 +238,7 @@ class AlbumUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
     is_public: Optional[bool] = None
     cover_photo_id: Optional[int] = Field(None, gt=0)
-    tags: Optional[List[str]] = Field(None, max_items=MAX_TAGS_COUNT)
+    tags: Optional[List[str]] = Field(None, max_length=MAX_TAGS_COUNT)
 
 class AlbumDetail(BaseModel):
     """Detailed album information."""
@@ -415,7 +415,7 @@ class StorageQuotaInfo(BaseModel):
 # Batch operation schemas
 class BatchPhotoOperation(BaseModel):
     """Schema for batch photo operations."""
-    photo_ids: List[int] = Field(..., min_items=1, max_items=100)
+    photo_ids: List[int] = Field(..., min_length=1, max_length=100)
     operation: str = Field(..., pattern=r'^(delete|move_to_album|update_share_type|add_tags|remove_tags)$')
     parameters: Optional[Dict[str, Any]] = None
     
@@ -439,7 +439,7 @@ class BatchOperationResult(BaseModel):
 class PhotoSearchRequest(BaseModel):
     """Schema for photo search requests."""
     query: Optional[str] = Field(None, max_length=200)
-    tags: Optional[List[str]] = Field(None, max_items=10)
+    tags: Optional[List[str]] = Field(None, max_length=10)
     album_id: Optional[int] = Field(None, gt=0)
     owner_id: Optional[int] = Field(None, gt=0)
     share_type: Optional[ShareTypeEnum] = None
