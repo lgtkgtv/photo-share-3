@@ -327,8 +327,8 @@ class ImageProcessor:
                 if os.path.exists(path):
                     try:
                         os.remove(path)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Failed to cleanup processed file {path}: {e}")
             raise StorageError(f"Image processing failed: {str(e)}")
     
     def _create_thumbnail(self, img: Image.Image, max_width: int, max_height: int) -> Image.Image:

@@ -115,8 +115,8 @@ class AdvancedImageProcessor:
                 if os.path.exists(file_path):
                     try:
                         os.remove(file_path)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Failed to cleanup temporary file {file_path}: {e}")
             raise
     
     def _analyze_image_quality(self, img: Image.Image) -> Dict[str, Any]:
@@ -152,8 +152,9 @@ class AdvancedImageProcessor:
                     analysis['estimated_quality'] = 'low'
                 else:
                     analysis['estimated_quality'] = 'medium'
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Quality estimation failed: {e}")
+            analysis['estimated_quality'] = 'unknown'
         
         # Check for common issues
         analysis['has_transparency'] = img.mode in ('RGBA', 'LA', 'P')

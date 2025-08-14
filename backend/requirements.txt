@@ -37,6 +37,10 @@ requests
 bandit  # Security linter
 safety  # Vulnerability scanner
 
+# Image processing
+Pillow>=9.0.0  # PIL fork for image processing
+python-magic>=0.4.27  # File type detection
+
 # Monitoring & Logging
 structlog  # Structured logging for security events
 python-json-logger  # JSON logging format
