@@ -50,6 +50,12 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
 
+    - name: Install system dependencies
+      run: |
+        # Install PostgreSQL client tools
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
     - name: Install dependencies
       run: |
         cd backend
@@ -59,22 +65,115 @@ jobs:
     - name: Set up test environment
       run: |
         cd backend
-        echo "POSTGRES_DB=test_photoapp" > .env
-        echo "POSTGRES_USER=test_user" >> .env
-        echo "POSTGRES_PASSWORD=test_password" >> .env
-        echo "DB_HOST=localhost" >> .env
-        echo "DB_PORT=5432" >> .env
-        echo "JWT_SECRET_KEY=test_secret_key_for_testing_32_chars_minimum" >> .env
+        # Create comprehensive test environment file
+        cat > .env << EOF
+        # Database Configuration for CI/CD
+        POSTGRES_DB=test_photoapp
+        POSTGRES_USER=test_user
+        POSTGRES_PASSWORD=test_password
+        DB_HOST=localhost
+        DB_PORT=5432
+        
+        # JWT Configuration for Testing
+        JWT_SECRET_KEY=test_secret_key_for_testing_32_chars_minimum_length_requirement
+        JWT_ALGORITHM=HS256
+        JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+        
+        # Legacy Auth Config (for backward compatibility)
+        SECRET_KEY=test-secret-key-for-legacy-auth-compatibility
+        ALGORITHM=HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES=30
+        
+        # Environment Identification
+        ENVIRONMENT=test
+        DEBUG=false
+        TESTING=true
+        
+        # Security Settings for Testing
+        PASSWORD_MIN_LENGTH=8
+        PASSWORD_REQUIRE_UPPERCASE=true
+        PASSWORD_REQUIRE_LOWERCASE=true
+        PASSWORD_REQUIRE_DIGITS=true
+        PASSWORD_REQUIRE_SPECIAL=false
+        
+        # Rate Limiting Settings (relaxed for testing)
+        RATE_LIMIT_REQUESTS_PER_MINUTE=100
+        RATE_LIMIT_LOGIN_ATTEMPTS_PER_HOUR=20
+        ACCOUNT_LOCKOUT_ATTEMPTS=10
+        ACCOUNT_LOCKOUT_DURATION_MINUTES=5
+        
+        # Test Database URL (explicit for CI)
+        DATABASE_URL=postgresql+asyncpg://test_user:test_password@localhost:5432/test_photoapp
+        EOF
+        
+        # Show environment for debugging
+        echo "=== Test Environment Configuration ==="
+        cat .env
+        echo "======================================"
+
+    - name: Install security tools
+      run: |
+        pip install bandit safety
+
+    - name: Wait for database to be ready
+      run: |
+        # Wait for PostgreSQL to be ready
+        for i in {1..30}; do
+          if pg_isready -h localhost -p 5432 -U test_user; then
+            echo "PostgreSQL is ready!"
+            break
+          fi
+          echo "Waiting for PostgreSQL... ($i/30)"
+          sleep 2
+        done
+
+    - name: Initialize test database
+      run: |
+        cd backend
+        # Set environment variables for the initialization
+        export POSTGRES_DB=test_photoapp
+        export POSTGRES_USER=test_user
+        export POSTGRES_PASSWORD=test_password
+        export DB_HOST=localhost
+        export DB_PORT=5432
+        
+        # Initialize the database
+        python init_db.py
+        echo "Database initialized successfully"
 
     - name: Run security linting
       run: |
         cd backend
-        bandit -r services/ middleware/ -f json || true
+        # Run bandit security linter
+        bandit -r services/ api/ models/ schemas/ -f json -o bandit-report.json || true
+        bandit -r services/ api/ models/ schemas/ || true
+
+    - name: Run dependency vulnerability check
+      run: |
+        cd backend
+        # Check for known vulnerabilities in dependencies
+        safety check || true
 
     - name: Run tests with coverage
       run: |
         cd backend
-        python -m pytest tests/ -v --cov=services --cov=middleware --cov-report=xml --cov-report=term
+        # Set environment variables for tests
+        export POSTGRES_DB=test_photoapp
+        export POSTGRES_USER=test_user
+        export POSTGRES_PASSWORD=test_password
+        export DB_HOST=localhost
+        export DB_PORT=5432
+        export ENVIRONMENT=test
+        
+        # Run tests with coverage
+        python -m pytest tests/ -v \
+          --cov=services \
+          --cov=api \
+          --cov=models \
+          --cov=schemas \
+          --cov-report=xml \
+          --cov-report=term \
+          --tb=short
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

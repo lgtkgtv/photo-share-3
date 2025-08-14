@@ -35,6 +35,7 @@ requests
 
 # Security testing
 bandit  # Security linter
+safety  # Vulnerability scanner
 
 # Monitoring & Logging
 structlog  # Structured logging for security events
