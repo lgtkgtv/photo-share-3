@@ -1,0 +1,86 @@
+# Docker Compose configuration for testing environment
+# This file provides isolated testing infrastructure separate from development
+
+services:
+  test-db:
+    image: postgres:15
+    restart: "no"
+    environment:
+      POSTGRES_USER: photo_test_user
+      POSTGRES_PASSWORD: test_password_for_ci_cd_only
+      POSTGRES_DB: photoapp_test
+    volumes:
+      - test_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts with dev db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U photo_test_user -d photoapp_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - test-network
+
+  test-backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env.test
+    depends_on:
+      test-db:
+        condition: service_healthy
+    ports:
+      - "8001:8000"  # Different port to avoid conflicts with dev backend
+    volumes:
+      - ./backend:/app
+      - test_uploads:/app/uploads
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+      - DB_HOST=test-db
+      - DB_PORT=5432
+    command: >
+      sh -c "
+        echo 'Waiting for test database to be ready...' &&
+        sleep 5 &&
+        echo 'Initializing test database...' &&
+        python init_db.py &&
+        echo 'Running tests...' &&
+        pytest -v --tb=short
+      "
+    networks:
+      - test-network
+    # Don't restart automatically in test environment
+    restart: "no"
+
+  test-redis:
+    image: redis:7-alpine
+    restart: "no"
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - test_redis_data:/data
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - test-network
+
+# Test-specific volumes (isolated from development)
+volumes:
+  test_pgdata:
+    driver: local
+  test_redis_data:
+    driver: local
+  test_uploads:
+    driver: local
+
+# Isolated test network
+networks:
+  test-network:
+    driver: bridge
+    name: photoapp_test_network
