@@ -32,10 +32,10 @@ class User(Base):
     )
     sessions = relationship("UserSession", back_populates="user")
     
-    # Photo relationships - using string references for future implementation
-    # photos = relationship("Photo", back_populates="owner")
-    # albums = relationship("Album", back_populates="owner") 
-    # storage_quota = relationship("StorageQuota", back_populates="user", uselist=False)
+    # Photo relationships - using string references to avoid circular imports
+    photos = relationship("Photo", back_populates="owner")
+    albums = relationship("Album", back_populates="owner") 
+    storage_quota = relationship("StorageQuota", back_populates="user", uselist=False)
     
     def __repr__(self):
         return f"<User(email='{self.email}', active={self.is_active}, verified={self.is_verified})>"

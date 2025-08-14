@@ -175,7 +175,9 @@ class TestJWTSecurity:
     def setup_method(self):
         """Setup test fixtures."""
         self.test_email = "test@example.com"
-        self.security_config = SecurityConfig()
+        # Use the global security config to ensure consistency
+        from services.security import security_config
+        self.security_config = security_config
     
     def test_jwt_token_creation(self):
         """Test JWT token creation with proper claims."""
@@ -508,10 +510,11 @@ class TestSecurityIntegration:
         rbac = RBACService(db_session)
         from jose import jwt
         
+        from services.security import security_config
         refresh_payload = jwt.decode(
             refresh_token,
-            SecurityConfig().jwt_secret_key,
-            algorithms=[SecurityConfig().jwt_algorithm]
+            security_config.jwt_secret_key,
+            algorithms=[security_config.jwt_algorithm]
         )
         
         session = await rbac.create_user_session(

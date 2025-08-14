@@ -53,8 +53,10 @@ class PhotoMetadataBase(BaseModel):
         if v:
             # Strip whitespace and basic sanitization
             v = v.strip()
-            # Remove potentially harmful characters
-            v = re.sub(r'[<>"\']', '', v)
+            # Remove potentially harmful characters including path traversal
+            v = re.sub(r'[<>"\']', '', v)  # XSS prevention
+            v = re.sub(r'\.\.\/|\.\.\\', '', v)  # Path traversal prevention
+            v = re.sub(r'[;|&$()]', '', v)  # Command injection prevention
             if len(v) == 0:
                 return None
         return v

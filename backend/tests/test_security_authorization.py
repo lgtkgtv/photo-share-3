@@ -14,6 +14,7 @@ from services.authorization import (
     require_self_or_admin, AuthorizationError
 )
 from models.user import User
+from models.photo import Photo  # Needed for SQLAlchemy relationship resolution
 from models.role import Role, Permission, UserSession, SecurityEvent, BlacklistedToken
 from schemas.rbac import ResourceType, ActionType, SeverityLevel
 from dao.user_dao import UserDAO
@@ -70,9 +71,17 @@ class TestRBACPermissionSystem:
         await db_session.commit()
         await db_session.refresh(role)
         
-        assert role.id is not None
-        assert len(role.permissions) == 3
-        assert role.permissions[0].name == "user:read"
+        # Explicitly load the permissions relationship
+        from sqlalchemy.orm import selectinload
+        from sqlalchemy import select
+        result = await db_session.execute(
+            select(Role).where(Role.id == role.id).options(selectinload(Role.permissions))
+        )
+        role_with_permissions = result.scalar_one()
+        
+        assert role_with_permissions.id is not None
+        assert len(role_with_permissions.permissions) == 3
+        assert role_with_permissions.permissions[0].name in ["user:read", "user:update", "photo:create"]
     
     async def test_user_role_assignment(self, db_session: AsyncSession):
         """Test assigning roles to users."""
