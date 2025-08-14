@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.types import JSON
 from enum import Enum
 import uuid
 from datetime import datetime, timezone
@@ -73,14 +74,14 @@ class Photo(Base):
     # Photo metadata
     title = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
-    tags = Column(JSONB, nullable=True)  # JSON array of tags
+    tags = Column(JSON, nullable=True)  # JSON array of tags (compatible with SQLite and PostgreSQL)
     
     # EXIF and technical data
-    exif_data = Column(JSONB, nullable=True)  # Structured EXIF data
+    exif_data = Column(JSON, nullable=True)  # Structured EXIF data (compatible with SQLite and PostgreSQL)
     camera_make = Column(String(100), nullable=True)
     camera_model = Column(String(100), nullable=True)
     taken_at = Column(DateTime(timezone=True), nullable=True)  # When photo was taken
-    location = Column(JSONB, nullable=True)  # GPS coordinates if available
+    location = Column(JSON, nullable=True)  # GPS coordinates if available (compatible with SQLite and PostgreSQL)
     
     # Processing and thumbnails
     status = Column(SQLEnum(PhotoStatus), default=PhotoStatus.UPLOADING, nullable=False, index=True)
@@ -99,7 +100,7 @@ class Photo(Base):
     # Content moderation
     content_warning = Column(Boolean, default=False, nullable=False)
     moderation_status = Column(String(50), default='pending', index=True)
-    moderation_log = Column(JSONB, nullable=True)
+    moderation_log = Column(JSON, nullable=True)  # Compatible with SQLite and PostgreSQL
     
     # Statistics and engagement
     view_count = Column(Integer, default=0, nullable=False)
@@ -165,7 +166,7 @@ class Album(Base):
     
     # Organization
     sort_order = Column(String(50), default='created_desc')  # How photos are sorted
-    tags = Column(JSONB, nullable=True)  # Album tags
+    tags = Column(JSON, nullable=True)  # Album tags (compatible with SQLite and PostgreSQL)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

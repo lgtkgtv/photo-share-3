@@ -48,9 +48,14 @@ class SecurityConfig:
         secret = os.getenv("JWT_SECRET_KEY")
         
         if not secret:
-            logger.warning("JWT_SECRET_KEY not found in environment. Generating secure random secret.")
-            secret = self._generate_secure_secret()
-            logger.info("Generated secure JWT secret. In production, store this securely!")
+            # In test environment, use a fixed secret for consistency
+            if os.getenv("ENVIRONMENT") == "test" or os.getenv("TESTING") == "true":
+                secret = "test_secret_key_for_testing_32_chars_minimum_length_requirement"
+                logger.info("Using fixed JWT secret for testing environment")
+            else:
+                logger.warning("JWT_SECRET_KEY not found in environment. Generating secure random secret.")
+                secret = self._generate_secure_secret()
+                logger.info("Generated secure JWT secret. In production, store this securely!")
             
         elif len(secret) < 32:
             logger.error("JWT_SECRET_KEY is too short! Must be at least 32 characters.")
